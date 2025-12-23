@@ -25,8 +25,8 @@ public class GitBusServiceTest {
     Path repoRoot = Files.createDirectory(tempDir.resolve("repo"));
     GitDocStore store = new GitDocStore(repoRoot);
     PageRef ref = new PageRef("FrontPage");
-    store.writePage(ref, new PageWriteRequest("alpha", "<properties/>"));
-    store.writePage(ref, new PageWriteRequest("beta", "<properties/>"));
+    store.writePage(ref, new PageWriteRequest("alpha", "<properties/>", null, "test-user", "test-user@example.invalid"));
+    store.writePage(ref, new PageWriteRequest("beta", "<properties/>", null, "test-user", "test-user@example.invalid"));
 
     GitBusService service = new GitBusService(vertx, repoRoot);
     service.register(vertx.eventBus());

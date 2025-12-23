@@ -92,7 +92,7 @@ dependencies {
   implementation "io.vertx:vertx-config:${vertxVersion}"
   implementation "io.vertx:vertx-grpc:${vertxVersion}"
   implementation "io.vertx:vertx-micrometer-metrics:${vertxVersion}"
-  implementation "io.micrometer:micrometer-registry-prometheus:1.12.6"
+  implementation "io.micrometer:micrometer-registry-prometheus:1.15.6"
   implementation "com.google.protobuf:protobuf-java:${protobufVersion}"
   protobuf "io.vertx:vertx-grpc-protoc-plugin:${vertxVersion}"
 
@@ -261,6 +261,9 @@ task createUpdateLists(type: WikiFileListBuilderTask) {
 processResources.dependsOn "fitNesseVersion", "compileSass", "createUpdateLists"
 
 task copyRuntimeLibs(type: Copy) {
+  doFirst {
+    delete "lib"
+  }
   into "lib"
   from configurations.runtimeClasspath
 }
@@ -361,6 +364,9 @@ task acceptanceTest(type: JavaExec) {
   onlyIf { test.didWork }
   classpath = standaloneJar.outputs.files
   mainClass = "fitnesseMain.FitNesseMain"
+  javaLauncher = javaToolchains.launcherFor {
+    languageVersion = JavaLanguageVersion.of(21)
+  }
   systemProperty "slim.port", "0"
   args "-o", "-c", "FitNesse.SuiteAcceptanceTests?suite&format=text"
 }
