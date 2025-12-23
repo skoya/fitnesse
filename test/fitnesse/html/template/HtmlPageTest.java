@@ -10,6 +10,7 @@ import static util.RegexTestCase.assertSubString;
 
 import fitnesse.ConfigurationParameter;
 import fitnesse.FitNesseContext;
+import fitnesse.http.MockRequest;
 import fitnesse.testutil.FitNesseUtil;
 import fitnesse.wiki.PathParser;
 import org.junit.Before;
@@ -51,7 +52,7 @@ public class HtmlPageTest {
 
   @Test
   public void testIncludesBody() throws Exception {
-    assertSubString("<body>", html);
+    assertSubString("<body", html);
     assertSubString("</body>", html);
   }
 
@@ -111,5 +112,14 @@ public class HtmlPageTest {
     String breadcrumbs = page.html(null);
     assertSubString("<a href=\"/wiki/TstPg1\">TstPg1</a>", breadcrumbs);
     assertSubString("<a href=\"/wiki/TstPg1.TstPg2\">TstPg2</a>", breadcrumbs);
+  }
+
+  @Test
+  public void testThemeCanBeOverriddenByCookie() throws Exception {
+    MockRequest request = new MockRequest();
+    request.addHeader("Cookie", "fitnesse_theme=fitnesse_mint");
+    String themed = page.html(request);
+    assertSubString("href=\"/files/fitnesse/css/fitnesse_mint.css\"", themed);
+    assertSubString("src=\"/files/fitnesse/javascript/fitnesse_mint.js\"", themed);
   }
 }

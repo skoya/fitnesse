@@ -26,6 +26,9 @@ The Vert.x runtime replaces the legacy servlet stack with async routing, EventBu
 |java.security.manager|allow|Set to allow to prevent SecurityManager install errors on modern JDKs|
 |SLIM_PORT|8099|Port hint for Slim runner when using quickrun.sh (can be overridden)|
 
+!2 vertx-config.json
+If !style_code(vertx-config.json) is missing at startup, the server writes a default file with the current settings so you can edit it directly. Environment variables still override values from the file.
+
 !2 Plugin loading (Vert.x)
 Plugins are loaded from !style_code(plugins.properties) and Java !-ServiceLoader-! providers. Vert.x plugins can register routes and adapters (MCP, AI, auth, etc.) via the Vert.x plugin registry so they can be enabled/disabled without code changes.
 
@@ -37,6 +40,55 @@ Plugins are loaded from !style_code(plugins.properties) and Java !-ServiceLoader
  * When !style_code(FITNESSE_AUTH_ENABLED=true), routes are protected by the shared policy rules and an auth handler (Basic or OIDC).
  * OIDC is enabled with !style_code(FITNESSE_OIDC_ENABLED=true) and issuer/client settings, or Azure Entra settings.
  * MCP adapters accept OIDC bearer tokens or Basic auth and log to !style_code(.fitnesse/audit/mcp-audit.jsonl).
+
+!2 OAuth2 / OIDC flow
+The Vert.x server validates bearer tokens (JWT) using OIDC discovery and JWKS keys. Tokens are then checked against the access policy rules.
+
+!3 OIDC validation sequence
+!plantuml
+@startuml
+actor User
+participant "OIDC Provider" as IdP
+participant "FitNesse Vert.x" as FitNesse
+participant "Policy Engine" as Policy
+
+User -> IdP: OAuth2/OIDC login\n(authorization code or client credentials)
+IdP --> User: Access token (JWT)
+User -> FitNesse: Request + Authorization: Bearer <token>
+FitNesse -> IdP: Discover metadata + JWKS\n(cached by Vert.x)
+IdP --> FitNesse: OIDC config + signing keys
+FitNesse -> FitNesse: Validate JWT (issuer, audience, exp)
+FitNesse -> Policy: Evaluate policy.json rules
+Policy --> FitNesse: allow / deny
+FitNesse --> User: Response or 401/403
+@enduml
+!endplantuml
+
+!3 Azure Entra example
+Azure Entra uses the tenant ID to build the issuer URL. When !style_code(FITNESSE_AZURE_TENANT_ID) is set, it takes precedence over !style_code(FITNESSE_OIDC_ISSUER).
+
+!plantuml
+@startuml
+actor User
+participant "Azure Entra ID" as Entra
+participant "FitNesse Vert.x" as FitNesse
+
+User -> Entra: OAuth2 login\n(tenant scoped)
+Entra --> User: Access token (JWT)
+User -> FitNesse: Authorization: Bearer <token>
+FitNesse -> Entra: GET https://login.microsoftonline.com/{tenant}/v2.0/.well-known/openid-configuration
+Entra --> FitNesse: Metadata + JWKS
+FitNesse --> User: Response or 401/403
+@enduml
+!endplantuml
+
+Example env configuration:
+{{{
+FITNESSE_AUTH_ENABLED=true
+FITNESSE_AZURE_TENANT_ID=contoso.onmicrosoft.com
+FITNESSE_AZURE_CLIENT_ID=00000000-0000-0000-0000-000000000000
+FITNESSE_AZURE_AUDIENCE=api://fitnesse (optional)
+}}}
 
 !2 Policy file
 Policies are defined in !style_code(.fitnesse/policy.json) with optional overrides under nested folders. The closest folder policy wins, and deny rules block lower overrides unless ''allowOverride'' is true.

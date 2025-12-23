@@ -5,6 +5,15 @@
  <li><a href="${wikiRoot}$breadCrumb.Link">$breadCrumb.Name</a></li>
 #end
 </ul>
+<div class="theme-switcher">
+ <label for="theme-select">Theme</label>
+ <select id="theme-select">
+  <option value="fitnesse_classic">Classic</option>
+  <option value="fitnesse_mint">Mint</option>
+  <option value="fitnesse_straight">Straight</option>
+  <option value="fitnesse_topnav">Topnav</option>
+ </select>
+</div>
 <h1>#if($pageTitle.Link)<a href="${wikiRoot}$pageTitle.Link">$pageTitle.Title</a>#else$pageTitle.Title#end</h1>
 
 #if($pageTitle.PageTags)<h5> $pageTitle.PageTags</h5>#end

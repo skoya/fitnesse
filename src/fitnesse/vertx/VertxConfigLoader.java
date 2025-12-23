@@ -6,6 +6,10 @@ import io.vertx.config.ConfigStoreOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -21,6 +25,7 @@ public final class VertxConfigLoader {
   }
 
   public static VertxConfig load(Vertx vertx, VertxConfig fallback) {
+    writeDefaultsIfMissing(fallback);
     ConfigStoreOptions fileStore = new ConfigStoreOptions()
       .setType("file")
       .setOptional(true)
@@ -46,5 +51,17 @@ public final class VertxConfigLoader {
       // Fall back to provided defaults.
     }
     return VertxConfig.fromJson(loaded, fallback);
+  }
+
+  private static void writeDefaultsIfMissing(VertxConfig fallback) {
+    Path path = Paths.get("vertx-config.json");
+    if (Files.exists(path)) {
+      return;
+    }
+    try {
+      Files.writeString(path, fallback.toJson().encodePrettily(), StandardCharsets.UTF_8);
+    } catch (Exception ignored) {
+      // If we can't write the file, just continue with defaults.
+    }
   }
 }

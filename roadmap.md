@@ -1,4 +1,4 @@
-# planfit.md — FitNesse Modernization to Vert.x + Agentic Requirements + Native Git Storage + MCP
+# roadmap.md — FitNesse Modernization to Vert.x + Agentic Requirements + Native Git Storage + MCP
 
 This plan is written to be executed against a **fork of https://github.com/unclebob/fitnesse** and is intentionally structured for **Codex** (clear tasks, interfaces, acceptance criteria, and deliverables).
 
@@ -433,13 +433,13 @@ Design: one core MCP service, multiple adapters.
 
 ## 13) Delivery Milestones (suggested)
 
-### Milestone A — Core Vert.x + filesystem-legacy
+### Milestone A — Core Vert.x + filesystem-legacy (completed)
 - [x] Vert.x server with view/edit/save
 - [x] FileSystemDocStore
 - [x] Basic test runner
 - [x] Minimal UI
 
-### Milestone B — Native GitDocStore + history UI
+### Milestone B — Native GitDocStore + history UI (completed)
 - [x] GitDocStore
 - [x] History/diff/revert UI
 - [x] Migration CLI import-to-git
@@ -448,13 +448,13 @@ Design: one core MCP service, multiple adapters.
 - [x] Replace legacy static file serving with Vert.x StaticHandler for `/files/*` and asset delivery.
 - [x] EventBus tests using Vert.x unit test library.
 
-### Milestone C — CLI runner + CI templates
+### Milestone C — CLI runner + CI templates (completed)
 - [x] `fitnesse test` CLI
 - [x] JUnit + HTML outputs
 - [x] Docker image
 - [x] GitHub/GitLab examples
 
-### Milestone D — Search + AI assistant v1
+### Milestone D — Search + AI assistant v1 (completed)
 - [x] 1) Ship search endpoints + UI with grounding output (done in current implementation).
 - [x] 2) Move search execution to EventBus + shared-data caching and async worker pool.
 - [x] 3) Add search filters (tags, suite/test) and paging with UI controls.
@@ -476,13 +476,13 @@ Design: one core MCP service, multiple adapters.
 - [x] Add workflow execution API (`/api/ai/workflows/run`) using LangGraph adapter.
 - [x] Add UI for test assertions + run history.
 
-### Milestone E — LangGraph multi-agent + evals
+### Milestone E — LangGraph multi-agent + evals (completed)
 - [x] Multi-role orchestration (role-aware workflow nodes).
 - [x] Reflection nodes (second-pass reasoning prompts).
 - [x] Graph execution order with edges + draggable node layout.
 - [x] Evals authoring + execution UI and API (mockable).
 
-### Milestone F — MCP server + multi-protocol adapters
+### Milestone F — MCP server + multi-protocol adapters (completed)
 - [x] HTTP+JSON MCP
 - [x] Optional websocket/gRPC view
 - [x] RBAC + audit logs
@@ -588,7 +588,7 @@ Design: one core MCP service, multiple adapters.
 
 ## 15) Repo Artifacts to Add
 
-- `plan.md` (this file)
+- `roadmap.md` (this file)
 - `docs/architecture.md`
 - `docs/security.md`
 - `docs/ci.md`

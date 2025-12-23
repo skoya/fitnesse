@@ -79,9 +79,32 @@ public class HtmlPage {
   }
 
   public void render(Writer writer, Request request) {
+    if (request != null) {
+      String requestedTheme = sanitizeTheme(request.getCookie("fitnesse_theme"));
+      if (requestedTheme != null) {
+        velocityContext.put("theme", requestedTheme);
+      }
+    }
     Template template = velocityEngine.getTemplate(templateFileName);
     put("request", request);
     template.merge(velocityContext, writer);
+  }
+
+  private String sanitizeTheme(String theme) {
+    if (theme == null || theme.isEmpty()) {
+      return null;
+    }
+    for (int i = 0; i < theme.length(); i++) {
+      char ch = theme.charAt(i);
+      boolean ok = (ch >= '0' && ch <= '9')
+        || (ch >= 'A' && ch <= 'Z')
+        || (ch >= 'a' && ch <= 'z')
+        || ch == '-' || ch == '_';
+      if (!ok) {
+        return null;
+      }
+    }
+    return theme;
   }
 
 

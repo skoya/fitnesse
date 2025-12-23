@@ -1,13 +1,13 @@
 #set( $localPath = $actions.localPageName )
 <ul class="navbar-nav mr-auto">
     #if( $actions.suitePage )
-        <li><a class="nav-link text-secondary" href="$localPath?suite" accesskey="t">Suite</a></li>
+        <li><a class="nav-link text-secondary" href="${wikiRoot}$localPath?suite" accesskey="t">Suite</a></li>
     #end
     #if( $actions.testPage )
-        <li><a class="nav-link text-secondary" href="$localPath?test" accesskey="t">Test</a></li>
+        <li><a class="nav-link text-secondary" href="${wikiRoot}$localPath?test" accesskey="t">Test</a></li>
     #end
     #if( $actions.withEdit && !$actions.imported)
-        <li><a class="nav-link text-secondary" href="$localPath?edit" accesskey="e">Edit</a></li>
+        <li><a class="nav-link text-secondary" href="${wikiRoot}$localPath/edit" accesskey="e">Edit</a></li>
     #end
     #if( $actions.withSearch )
         <li><a class="nav-link text-secondary" href="${contextRoot}search" accesskey="s">Search</a></li>
@@ -16,7 +16,7 @@
         <li><a class="nav-link text-secondary" href="${contextRoot}history/$localPath">History</a></li>
     #end
     #if( $actions.imported )
-        <li><a class="nav-link text-secondary" href="$localPath?edit" accesskey="e">Edit Locally</a></li>
+        <li><a class="nav-link text-secondary" href="${wikiRoot}$localPath/edit" accesskey="e">Edit Locally</a></li>
     #end
     #if( $actions.imported )
         <li><a class="nav-link text-secondary" href="$sourceUrl?responder=edit&amp;redirectToReferer=true&amp;redirectAction=importAndView">Edit Remotely</a></li>
@@ -32,7 +32,7 @@
                 </ul>
             </li>
         #else
-            <li><a class="nav-link text-secondary" href="$localPath?new">Add</a></li>
+            <li><a class="nav-link text-secondary" href="${wikiRoot}$localPath?new">Add</a></li>
         #end
     #end
 
@@ -62,7 +62,7 @@
                 <li#group(3)><a class="dropdown-item" href="?search" accesskey="s">Search</a></li>
             #end
             #if( $actions.withRecentChanges )
-                <li#group(3)><a class="dropdown-item" href="${contextRoot}RecentChanges" accesskey="">Recent Changes</a></li>
+                <li#group(3)><a class="dropdown-item" href="${wikiRoot}RecentChanges" accesskey="">Recent Changes</a></li>
             #end
 
             #if( $actions.testPage || $actions.suitePage )
@@ -80,7 +80,7 @@
                 <li#group(5)><a class="dropdown-item" href="$localPath?variables" accesskey="v">Variables</a></li>
             #end
             #if( $actions.withUserGuide )
-                <li#group(6)><a class="dropdown-item" href="${contextRoot}FitNesse.UserGuide" accesskey="">User Guide</a></li>
+                <li#group(6)><a class="dropdown-item" href="${wikiRoot}FitNesse.UserGuide" accesskey="">User Guide</a></li>
             #end
         </ul>
     </li>

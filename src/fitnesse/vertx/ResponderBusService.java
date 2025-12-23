@@ -194,6 +194,15 @@ final class ResponderBusService {
         request.setCredentials(decoded.substring(0, split), decoded.substring(split + 1));
       }
     }
+    if (request.getAuthorizationUsername() == null || request.getAuthorizationUsername().isEmpty()) {
+      String user = firstNonBlank(
+        request.getHeader("X-FitNesse-User"),
+        request.getHeader("X-Remote-User"),
+        request.getHeader("Remote-User"));
+      if (user != null) {
+        request.setCredentials(user, "");
+      }
+    }
 
     JsonArray uploads = payload.getJsonArray(HEADER_UPLOADS, new JsonArray());
     for (int i = 0; i < uploads.size(); i++) {
@@ -303,5 +312,17 @@ final class ResponderBusService {
       }
     }
     return -1;
+  }
+
+  private static String firstNonBlank(String... values) {
+    if (values == null) {
+      return null;
+    }
+    for (String value : values) {
+      if (value != null && !value.isBlank()) {
+        return value;
+      }
+    }
+    return null;
   }
 }

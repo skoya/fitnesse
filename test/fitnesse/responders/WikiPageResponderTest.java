@@ -25,6 +25,8 @@ import static util.RegexTestCase.assertHasRegexp;
 import static util.RegexTestCase.assertNotSubString;
 import static util.RegexTestCase.assertSubString;
 
+import java.util.Properties;
+
 public class WikiPageResponderTest {
   private WikiPage root;
   private FitNesseContext context;
@@ -229,7 +231,7 @@ public class WikiPageResponderTest {
 
     final String content = requestPage("SamplePage").getContent();
 
-    assertSubString("<body class=\"imported\">", content);
+    assertSubString("<body class=\"imported\"", content);
   }
 
   @Test
@@ -243,7 +245,48 @@ public class WikiPageResponderTest {
 
     final String content = requestPage("SamplePage").getContent();
 
-    assertNotSubString("<body class=\"imported\">", content);
+    assertNotSubString("class=\"imported\"", content);
+  }
+
+  @Test
+  public void testToolsMenuLinksWhenEnabled() throws Exception {
+    Properties properties = new Properties();
+    properties.setProperty("wiki.root", "/wiki/");
+    FitNesseContext toolContext = FitNesseUtil.makeTestContext(properties);
+    WikiPage toolRoot = toolContext.getRootPage();
+    WikiPage page = WikiPageUtil.addPage(toolRoot, PathParser.parse("ToolPage"), "content");
+    PageData data = page.getData();
+    data.setAttribute("Edit");
+    data.setAttribute("Properties");
+    data.setAttribute("WhereUsed");
+    data.setAttribute("Versions");
+    data.setAttribute("Refactor");
+    data.setAttribute("Files");
+    data.setAttribute("Search");
+    data.setAttribute("RecentChanges");
+    data.setAttribute("Test");
+    page.commit(data);
+
+    MockRequest request = new MockRequest();
+    request.setResource("ToolPage");
+    Responder responder = new WikiPageResponder();
+    SimpleResponse response = (SimpleResponse) responder.makeResponse(toolContext, request);
+    String body = response.getContent();
+
+    assertSubString("ToolPage?properties", body);
+    assertSubString("ToolPage?whereUsed", body);
+    assertSubString("ToolPage?versions", body);
+    assertSubString("ToolPage?refactor&amp;type=rename", body);
+    assertSubString("ToolPage?refactor&amp;type=move", body);
+    assertSubString("ToolPage?refactor&amp;type=replace", body);
+    assertSubString("ToolPage?deletePage", body);
+    assertSubString("href=\"/files\"", body);
+    assertSubString("?search", body);
+    assertSubString("href=\"/wiki/RecentChanges\"", body);
+    assertSubString("?testHistory", body);
+    assertSubString("ToolPage?pageHistory", body);
+    assertSubString("ToolPage?variables", body);
+    assertSubString("href=\"/wiki/FitNesse.UserGuide\"", body);
   }
 
   @Test

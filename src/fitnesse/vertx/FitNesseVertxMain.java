@@ -11,6 +11,7 @@ import fitnesse.responders.WikiPageResponder;
 import fitnesse.responders.editing.EditResponder;
 import fitnesse.responders.editing.SaveResponder;
 import fitnesse.responders.files.UploadResponder;
+import fitnesse.responders.files.FileResponder;
 import fitnesse.responders.testHistory.ExecutionLogResponder;
 import fitnesse.ai.AiAssistantService;
 import fitnesse.ai.AiEvalService;
@@ -91,6 +92,7 @@ public final class FitNesseVertxMain {
     busService.register(bus, "fitnesse.page.save", new SaveResponder());
     busService.register(bus, "fitnesse.page.attachments", new UploadResponder());
     busService.register(bus, "fitnesse.results", new ExecutionLogResponder());
+    busService.register(bus, "fitnesse.files", new FileResponder());
     GitBusService gitBusService = new GitBusService(vertx, Paths.get(config.rootPath(), config.rootDirectory()));
     gitBusService.register(bus);
     SearchService searchService = new SearchService(context.getRootPage());
@@ -129,6 +131,20 @@ public final class FitNesseVertxMain {
 
     router.get("/").handler(ctx -> ctx.response().setStatusCode(302).putHeader("Location", "/wiki/FrontPage").end());
 
+    router.get("/wiki/*").handler(ctx -> {
+      if (isEditQuery(ctx)) {
+        String resource = resourceFrom(pathAfter(ctx.request().path(), "/wiki/"));
+        bus.request("fitnesse.page.edit", busService.buildPayload(ctx, resource), deliveryOptions("fitnesse.page.edit"), ar -> {
+          if (ar.succeeded()) {
+            busService.writeResponse(ctx, (io.vertx.core.json.JsonObject) ar.result().body());
+          } else {
+            ctx.response().setStatusCode(500).end("EventBus error: " + ar.cause().getMessage());
+          }
+        });
+        return;
+      }
+      ctx.next();
+    });
     router.get("/wiki/*").handler(ctx -> {
       String resource = resourceFrom(pathAfter(ctx.request().path(), "/wiki/"));
       String address = resolvePageAddress(ctx);
@@ -208,28 +224,42 @@ public final class FitNesseVertxMain {
     router.get("/search").handler(ctx -> {
       String query = ctx.request().getParam("q");
       String type = ctx.request().getParam("type");
+      String legacyQuery = ctx.request().getParam("searchString");
+      String legacyType = ctx.request().getParam("searchType");
       int limit = parseInt(ctx.request().getParam("limit"), 50);
       int offset = parseInt(ctx.request().getParam("offset"), 0);
       String tags = ctx.request().getParam("tags");
       String pageType = ctx.request().getParam("pageType");
+      if ((query == null || query.isEmpty()) && legacyQuery != null && !legacyQuery.isEmpty()) {
+        query = legacyQuery;
+        if (legacyType != null && legacyType.toLowerCase().contains("title")) {
+          type = "title";
+        }
+      }
       SearchService.Mode mode = "title".equalsIgnoreCase(type) ? SearchService.Mode.TITLE : SearchService.Mode.CONTENT;
       if (query == null || query.isEmpty()) {
         ctx.response().putHeader("Content-Type", "text/html; charset=UTF-8");
-        ctx.response().end(renderSearchForm("", mode, tags, pageType, limit, offset));
+        ctx.response().end(renderSearchForm("", mode, tags, pageType, limit, offset, resolveTheme(ctx)));
         return;
       }
+      final String finalQuery = query;
+      final SearchService.Mode finalMode = mode;
+      final String finalTags = tags;
+      final String finalPageType = pageType;
+      final int finalLimit = limit;
+      final int finalOffset = offset;
       bus.request(SearchBusService.ADDRESS_SEARCH, new io.vertx.core.json.JsonObject()
-        .put("query", query)
-        .put("type", mode.name().toLowerCase())
-        .put("limit", limit)
-        .put("offset", offset)
-        .put("tags", tags == null ? "" : tags)
-        .put("pageType", pageType == null ? "" : pageType), deliveryOptions(SearchBusService.ADDRESS_SEARCH), ar -> {
+        .put("query", finalQuery)
+        .put("type", finalMode.name().toLowerCase())
+        .put("limit", finalLimit)
+        .put("offset", finalOffset)
+        .put("tags", finalTags == null ? "" : finalTags)
+        .put("pageType", finalPageType == null ? "" : finalPageType), deliveryOptions(SearchBusService.ADDRESS_SEARCH), ar -> {
           if (ar.succeeded()) {
             io.vertx.core.json.JsonObject body = (io.vertx.core.json.JsonObject) ar.result().body();
             List<SearchResult> results = SearchBusService.toResults(body.getJsonArray("results"));
             ctx.response().putHeader("Content-Type", "text/html; charset=UTF-8");
-            ctx.response().end(renderSearchResults(query, mode, tags, pageType, results, limit, offset));
+            ctx.response().end(renderSearchResults(finalQuery, finalMode, finalTags, finalPageType, results, finalLimit, finalOffset, resolveTheme(ctx)));
           } else {
             ctx.response().setStatusCode(500).end("Search error: " + ar.cause().getMessage());
           }
@@ -411,6 +441,12 @@ public final class FitNesseVertxMain {
         });
     });
 
+    router.get("/api/ai/config").handler(ctx -> {
+      io.vertx.core.json.JsonObject cfg = buildAiConfig();
+      ctx.response().putHeader("Content-Type", "application/json");
+      ctx.response().end(cfg.encode());
+    });
+
     router.get("/ai").handler(ctx -> {
       ctx.response().putHeader("Content-Type", "text/html; charset=UTF-8");
       ctx.response().end(renderAiPage());
@@ -469,13 +505,8 @@ public final class FitNesseVertxMain {
       LOG.log(Level.SEVERE, "Failed to load Vert.x plugins", e);
     }
 
-    Path fileRoot = Paths.get(config.rootPath(), config.rootDirectory(), "files");
-    router.get("/files/fitnesse/*")
-      .handler(StaticHandler.create("fitnesse/resources"));
-    router.get("/files/*")
-      .handler(StaticHandler.create()
-        .setAllowRootFileSystemAccess(true)
-        .setWebRoot(fileRoot.toString()));
+    router.get("/files").handler(ctx -> handleFileRequest(ctx, bus, busService));
+    router.get("/files/*").handler(ctx -> handleFileRequest(ctx, bus, busService));
 
     WebClient webClient = WebClient.create(vertx);
     String plantUmlProxyTarget = readString("FITNESSE_PLANTUML_PROXY_TARGET", "https://www.plantuml.com/plantuml");
@@ -495,6 +526,15 @@ public final class FitNesseVertxMain {
           ctx.response().setStatusCode(502).end("PlantUML proxy error: " + ar.cause().getMessage());
         }
       });
+    });
+
+    router.get("/:legacyPage").handler(ctx -> {
+      String legacyPage = ctx.pathParam("legacyPage");
+      if (isReservedPath(legacyPage)) {
+        ctx.next();
+        return;
+      }
+      ctx.response().setStatusCode(302).putHeader("Location", "/wiki/" + legacyPage).end();
     });
 
     // Auth is now enforced via the policy handler; explicit per-path auth not needed.
@@ -621,6 +661,15 @@ public final class FitNesseVertxMain {
       return "fitnesse.test.single";
     }
     return "fitnesse.page.view";
+  }
+
+  private static boolean isEditQuery(io.vertx.ext.web.RoutingContext ctx) {
+    io.vertx.core.MultiMap params = ctx.request().params();
+    if (params.contains("edit")) {
+      return true;
+    }
+    String responder = params.get("responder");
+    return responder != null && "edit".equalsIgnoreCase(responder);
   }
 
   private static io.vertx.core.eventbus.DeliveryOptions deliveryOptions(String address) {
@@ -791,15 +840,10 @@ public final class FitNesseVertxMain {
     return html.toString();
   }
 
-  private static String renderSearchForm(String query, SearchService.Mode mode, String tags, String pageType, int limit, int offset) {
+  private static String renderSearchForm(String query, SearchService.Mode mode, String tags, String pageType,
+                                         int limit, int offset, String theme) {
     StringBuilder html = new StringBuilder();
-    html.append("<!doctype html><html><head><meta charset=\"utf-8\">")
-      .append("<title>Search</title>")
-      .append("<style>")
-      .append("body{font-family:Arial,Helvetica,sans-serif;margin:24px;background:#f7f5f0;}")
-      .append("form{background:#fff;padding:16px;border:1px solid #ddd;}")
-      .append("input[type=text]{width:60%;padding:6px;}")
-      .append("</style></head><body>");
+    html.append(renderSearchShellStart("Search", theme));
     html.append("<h1>Search</h1>");
     html.append("<form method=\"get\" action=\"/search\">")
       .append("<input type=\"text\" name=\"q\" value=\"").append(escapeHtml(query)).append("\"/>")
@@ -817,14 +861,25 @@ public final class FitNesseVertxMain {
       .append("<input type=\"hidden\" name=\"offset\" value=\"").append(offset).append("\"/>")
       .append("<button type=\"submit\">Search</button>")
       .append("</form>");
-    html.append("</body></html>");
+    html.append("</div></body></html>");
     return html.toString();
   }
 
+  private static void handleFileRequest(RoutingContext ctx, EventBus bus, ResponderBusService busService) {
+    String resource = resourceFrom(pathAfter(ctx.request().path(), "/"));
+    bus.request("fitnesse.files", busService.buildPayload(ctx, resource), deliveryOptions("fitnesse.files"), ar -> {
+      if (ar.succeeded()) {
+        busService.writeResponse(ctx, (io.vertx.core.json.JsonObject) ar.result().body());
+      } else {
+        ctx.response().setStatusCode(500).end("EventBus error: " + ar.cause().getMessage());
+      }
+    });
+  }
+
   private static String renderSearchResults(String query, SearchService.Mode mode, String tags, String pageType,
-                                            List<SearchResult> results, int limit, int offset) {
+                                            List<SearchResult> results, int limit, int offset, String theme) {
     StringBuilder html = new StringBuilder();
-    html.append(renderSearchForm(query, mode, tags, pageType, limit, offset).replace("</body></html>", ""));
+    html.append(renderSearchForm(query, mode, tags, pageType, limit, offset, theme).replace("</body></html>", ""));
     html.append("<h2>Results (").append(results.size()).append(")</h2>");
     html.append("<ul>");
     for (SearchResult result : results) {
@@ -860,7 +915,24 @@ public final class FitNesseVertxMain {
         .append("\">Next</a>");
     }
     html.append("</div>");
-    html.append("</body></html>");
+    html.append("</div></body></html>");
+    return html.toString();
+  }
+
+  private static String renderSearchShellStart(String title, String theme) {
+    String resolvedTheme = theme == null || theme.isEmpty() ? "fitnesse_classic" : theme;
+    StringBuilder html = new StringBuilder();
+    html.append("<!doctype html><html><head><meta charset=\"utf-8\">")
+      .append("<title>").append(escapeHtml(title)).append("</title>")
+      .append("<link rel=\"stylesheet\" type=\"text/css\" href=\"/files/fitnesse/css/fitnesse_wiki.css\" />")
+      .append("<link rel=\"stylesheet\" type=\"text/css\" href=\"/files/fitnesse/css/fitnesse_pages.css\" />")
+      .append("<link rel=\"stylesheet\" type=\"text/css\" href=\"/files/fitnesse/css/").append(escapeHtml(resolvedTheme)).append(".css\" />")
+      .append("<style>")
+      .append("body{margin:24px;} .search-shell{max-width:960px;margin:0 auto;}")
+      .append("form{background:#fff;padding:16px;border:1px solid #ddd;border-radius:6px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;}")
+      .append("input[type=text]{flex:1 1 260px;padding:6px;} select,input[type=number]{padding:6px;}")
+      .append("</style></head><body data-theme=\"").append(escapeHtml(resolvedTheme)).append("\">")
+      .append("<div class=\"search-shell\">");
     return html.toString();
   }
 
@@ -893,6 +965,18 @@ public final class FitNesseVertxMain {
     return new EchoAiProvider();
   }
 
+  private static io.vertx.core.json.JsonObject buildAiConfig() {
+    String provider = readString("FITNESSE_AI_PROVIDER", "echo");
+    boolean hasApiKey = false;
+    if ("openai".equalsIgnoreCase(provider)) {
+      String apiKey = readString("OPENAI_API_KEY", null);
+      hasApiKey = apiKey != null && !apiKey.isEmpty();
+    }
+    return new io.vertx.core.json.JsonObject()
+      .put("provider", provider.toLowerCase())
+      .put("hasApiKey", hasApiKey);
+  }
+
   private static String readString(String key, String fallback) {
     String value = System.getProperty(key);
     if (value == null || value.isEmpty()) {
@@ -908,6 +992,60 @@ public final class FitNesseVertxMain {
     return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
   }
 
+  private static String resolveTheme(io.vertx.ext.web.RoutingContext ctx) {
+    String theme = null;
+    if (ctx != null && ctx.request() != null && ctx.request().headers() != null) {
+      String cookie = ctx.request().getHeader("Cookie");
+      if (cookie != null) {
+        for (String part : cookie.split(";")) {
+          String[] pair = part.trim().split("=", 2);
+          if (pair.length == 2 && "fitnesse_theme".equals(pair[0])) {
+            theme = sanitizeTheme(pair[1]);
+            break;
+          }
+        }
+      }
+    }
+    return theme == null ? "fitnesse_classic" : theme;
+  }
+
+  private static String sanitizeTheme(String theme) {
+    if (theme == null || theme.isEmpty()) {
+      return null;
+    }
+    for (int i = 0; i < theme.length(); i++) {
+      char ch = theme.charAt(i);
+      boolean ok = (ch >= '0' && ch <= '9')
+        || (ch >= 'A' && ch <= 'Z')
+        || (ch >= 'a' && ch <= 'z')
+        || ch == '-' || ch == '_';
+      if (!ok) {
+        return null;
+      }
+    }
+    return theme;
+  }
+
+  private static boolean isReservedPath(String path) {
+    if (path == null || path.isEmpty()) {
+      return true;
+    }
+    return "files".equals(path)
+      || "search".equals(path)
+      || "history".equals(path)
+      || "diff".equals(path)
+      || "results".equals(path)
+      || "api".equals(path)
+      || "run".equals(path)
+      || "run-monitor".equals(path)
+      || "ai".equals(path)
+      || "agent".equals(path)
+      || "eventbus".equals(path)
+      || "plantuml".equals(path)
+      || "metrics".equals(path)
+      || "favicon.ico".equals(path);
+  }
+
   private static String renderAiPage() {
     StringBuilder html = new StringBuilder();
     html.append("<!doctype html><html><head><meta charset=\"utf-8\">")
@@ -920,6 +1058,9 @@ public final class FitNesseVertxMain {
       .append("pre{background:#fff;border:1px solid #ddd;padding:12px;}")
       .append("</style></head><body>");
     html.append("<h1>AI Assistant</h1>");
+    html.append("<div id=\"ai-warning\" style=\"display:none;padding:8px;border:1px solid #ffeeba;background:#fff3cd;color:#856404;margin-bottom:10px;\">");
+    html.append("AI provider not configured. Set OPENAI_API_KEY or switch provider.");
+    html.append("</div>");
     html.append("<label>Tool</label><br/>");
     html.append("<select id=\"tool\"><option value=\"assist\">Assist</option><option value=\"test-gen\">Generate Test</option></select><br/>");
     html.append("<input id=\"pagePath\" placeholder=\"Page path (for test-gen)\"/><br/>");
@@ -928,6 +1069,9 @@ public final class FitNesseVertxMain {
     html.append("<br/><button id=\"send\">Send</button>");
     html.append("<h2>Response</h2><pre id=\"response\"></pre>");
     html.append("<script>")
+      .append("fetch('/api/ai/config').then(r=>r.json()).then(cfg=>{")
+      .append("if(cfg&&cfg.provider==='openai'&&!cfg.hasApiKey){document.getElementById('ai-warning').style.display='block';}})")
+      .append(".catch(()=>{});")
       .append("document.getElementById('send').onclick=function(){")
       .append("var prompt=document.getElementById('prompt').value;")
       .append("var tool=document.getElementById('tool').value;")

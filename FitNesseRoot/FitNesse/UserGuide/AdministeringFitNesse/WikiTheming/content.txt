@@ -17,13 +17,18 @@ One of the benefits you'll have from the new layout is that the page L&F is easi
  * ''fitnesse_straight'' - the default style
  * ''fitnesse_mint'' - a classy style
  * ''fitnesse_topnav'' - a minimalistic style
+ * ''fitnesse_classic'' - classic FitNesse styling
  * ''bootstrap'' - uses [[Twitter Bootstrap][http://twitter.github.com/bootstrap]] as a basis for its styling
 
 For all styles the HTML remains the same. The default style can be configured through ''plugins.properties'', !-FitNesse-!'s settings file (this is where you also configure custom symbols). Add the line
 
 {{{
 Theme=fitnesse_mint
-}}}(re)start !-FitNesse-! and the style will have completely changed.
+}}}
+(re)start !-FitNesse-! and the style will have completely changed.
+
+!2 Switching themes in the UI
+FitNesse.ai includes a theme switcher in the page header. Select a theme from the drop-down to apply it immediately. Your selection is stored in a browser cookie named !-fitnesse_theme-! and overrides the server default for that browser.
 
 Apart from the layout style, fitnesse loads a few stylesheets by default: ''fitnesse_pages.css'' and ''fitnesse_wiki.css''. Both files serve the boilerplate for pages (like the properties page) and the wiki text.
 

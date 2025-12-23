@@ -51,6 +51,18 @@ public class SaveResponderTest {
     checkRecentChanges(root, "ChildPage");
   }
 
+  @Test
+  public void testRecentChangesIncludesUsername() throws Exception {
+    WikiPageUtil.addPage(root, PathParser.parse("ChildPage"));
+    prepareRequest("ChildPage");
+    request.setCredentials("alice", "secret");
+
+    responder.makeResponse(context, request);
+
+    String recentChanges = root.getChildPage("RecentChanges").getData().getContent();
+    assertHasRegexp("\\|ChildPage\\|alice\\|", recentChanges);
+  }
+
   private void prepareRequest(String pageName) {
     request.setResource(pageName);
     request.addInput(EditResponder.TIME_STAMP, "12345");

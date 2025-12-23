@@ -91,28 +91,28 @@
   #set( $localPath = $actions.localPageName )
 
  ## View the current page (useful after testing) 
-  Mousetrap.bind('v', function() { window.location.href ="$localPath"; });
+  Mousetrap.bind('v', function() { window.location.href ="${wikiRoot}$localPath"; });
 
  #if( $actions.testPage )
-    Mousetrap.bind('t', function() { window.location.href ="$localPath?test"; });
+    Mousetrap.bind('t', function() { window.location.href ="${wikiRoot}$localPath?test"; });
  #end
  #if( $actions.suitePage )
-    Mousetrap.bind('t', function() { window.location.href ="$localPath?suite"; });
+    Mousetrap.bind('t', function() { window.location.href ="${wikiRoot}$localPath?suite"; });
   #end
-  #if( $actions.withEdit && !$actions.imported)
-    Mousetrap.bind('e', function() { window.location.href ="$localPath?edit"; });
+ #if( $actions.withEdit && !$actions.imported)
+    Mousetrap.bind('e', function() { window.location.href ="${wikiRoot}$localPath/edit"; });
   #end
-  #if( $actions.withEdit)
-    Mousetrap.bind('a', function() { window.location.href ="$localPath?new"; });
+ #if( $actions.withEdit)
+    Mousetrap.bind('a', function() { window.location.href ="${wikiRoot}$localPath?new"; });
   #end
-  #if( $actions.withProperties )
-    Mousetrap.bind('p', function() { window.location.href ="$localPath?properties"; });
+ #if( $actions.withProperties )
+    Mousetrap.bind('p', function() { window.location.href ="${wikiRoot}$localPath?properties"; });
   #end
-  #if( $actions.withWhereUsed )
-    Mousetrap.bind('w', function() { window.location.href ="$localPath?whereUsed"; });
+ #if( $actions.withWhereUsed )
+    Mousetrap.bind('w', function() { window.location.href ="${wikiRoot}$localPath?whereUsed"; });
   #end
-  #if( $actions.withSearch )
-    Mousetrap.bind('s', function() { window.location.href ="$localPath?searchForm"; });
+ #if( $actions.withSearch )
+    Mousetrap.bind('s', function() { window.location.href ="${contextRoot}search"; });
     Mousetrap.bind('/', function() { 
       document.getElementById('searchString').focus();
       return false;  // stops the / character appearing in search box

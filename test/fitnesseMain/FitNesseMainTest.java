@@ -144,13 +144,38 @@ public class FitNesseMainTest {
   @Test
   public void localhostOnlyFlagResultsInConnectableFitnesseOnLocalHost() throws Exception {
     String[] args = {"-p", "1999", "-lh"};
+    System.setProperty("FITNESSE_VERTX_WEB", "false");
+    System.setProperty("FITNESSE_LEGACY_SOCKET", "true");
     new FitNesseMain().launchFitNesse(new Arguments(args));
     URL url = new URL("http://localhost:1999/?shutdown");
-    HttpURLConnection con = (HttpURLConnection) url.openConnection();
-    con.setRequestMethod("GET");
-    int responseCode = con.getResponseCode();
-    con.disconnect();
-    assertEquals(200, responseCode);
+    try {
+      int responseCode = waitForResponse(url, 2000);
+      assertEquals(200, responseCode);
+    } finally {
+      System.clearProperty("FITNESSE_VERTX_WEB");
+      System.clearProperty("FITNESSE_LEGACY_SOCKET");
+    }
+  }
+
+  private int waitForResponse(URL url, long timeoutMs) throws Exception {
+    long deadline = System.currentTimeMillis() + timeoutMs;
+    Exception lastError = null;
+    while (System.currentTimeMillis() < deadline) {
+      try {
+        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        con.setRequestMethod("GET");
+        int responseCode = con.getResponseCode();
+        con.disconnect();
+        return responseCode;
+      } catch (Exception e) {
+        lastError = e;
+        Thread.sleep(50);
+      }
+    }
+    if (lastError != null) {
+      throw lastError;
+    }
+    throw new IllegalStateException("No response from " + url);
   }
 
   @Test

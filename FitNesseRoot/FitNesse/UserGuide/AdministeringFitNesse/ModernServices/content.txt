@@ -1,0 +1,21 @@
+!1 Modern services (Vert.x, MCP, AI)
+The modern runtime focuses on async routing (Vert.x), external integrations (MCP), and optional AI tools. Each feature is real and gated by explicit config so you can enable only what you need.
+
+!2 What is available
+|!meta capability|!meta where to configure|!meta default|!meta how to enable|
+|Vert.x server runtime|[[Vertx Server][<AdministeringFitNesse.VertxServer>]]|enabled|Run !style_code(fitnesseMain.FitNesseMain) or !style_code(fitnesse.vertx.FitNesseVertxMain) with !style_code(FITNESSE_VERTX_PORT) as needed|
+|MCP adapters (HTTP/WS/gRPC)|[[MCP Adapters][<AdministeringFitNesse.McpAdapters>]]|HTTP on, WS/gRPC off|Set !style_code(FITNESSE_MCP_WS_ENABLED=true) or !style_code(FITNESSE_MCP_GRPC_ENABLED=true)|
+|AI assistant endpoints|[[Vertx Server][<AdministeringFitNesse.VertxServer>]]|echo provider|Set !style_code(FITNESSE_AI_PROVIDER=openai) and !style_code(OPENAI_API_KEY)|
+
+!2 Enablement flow
+!mermaid
+flowchart LR
+  A[Config defaults] --> B[Vert.x server]
+  B --> C[Optional MCP adapters]
+  B --> D[Optional AI provider]
+  C --> E[External agents]
+  D --> F[UI assist tools]
+!endmermaid
+
+!2 Security note
+If you expose MCP or AI endpoints outside a dev box, enable auth first (!style_code(FITNESSE_AUTH_ENABLED=true)) and restrict access with policy rules. See [[Network Security][<AdministeringFitNesse.NetworkSecurity>]] for defaults and safe deployment guidance.

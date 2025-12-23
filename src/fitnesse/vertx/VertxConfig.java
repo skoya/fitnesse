@@ -182,6 +182,25 @@ public final class VertxConfig {
     return oidcAudience;
   }
 
+  public io.vertx.core.json.JsonObject toJson() {
+    return new io.vertx.core.json.JsonObject()
+      .put("port", port)
+      .put("rootPath", rootPath)
+      .put("rootDirectory", rootDirectory)
+      .put("authEnabled", authEnabled)
+      .put("mcpWebSocketEnabled", mcpWebSocketEnabled)
+      .put("mcpGrpcEnabled", mcpGrpcEnabled)
+      .put("mcpGrpcPort", mcpGrpcPort)
+      .put("requestTimeoutMillis", requestTimeoutMillis)
+      .put("idleTimeoutSeconds", idleTimeoutSeconds)
+      .put("testPoolSize", testPoolSize)
+      .put("testMaxQueue", testMaxQueue)
+      .put("oidcEnabled", oidcEnabled)
+      .put("oidcIssuer", oidcIssuer)
+      .put("oidcClientId", oidcClientId)
+      .put("oidcAudience", oidcAudience);
+  }
+
   private static int readInt(String key, int fallback) {
     String raw = readString(key, null);
     if (raw == null || raw.isEmpty()) {

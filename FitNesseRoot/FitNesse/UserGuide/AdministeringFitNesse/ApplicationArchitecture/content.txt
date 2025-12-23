@@ -1,4 +1,4 @@
-FitNesse is a wiki server. It's also a test execution engine.
+FitNesse is a wiki server. It's also a test execution engine. The current runtime supports both the legacy servlet stack and the Vert.x server runtime (async routing, EventBus-based responders, and optional MCP/AI adapters).
 
 In this section the application structure is described. The application can be divided in four main components:
 
@@ -22,14 +22,15 @@ In this section the application structure is described. The application can be d
 ,---------------------.
 |  System Under Test  |
 `---------------------'}}}
-The wiki server is the component responsible for serving the web pages and handling user requests. One of the operations is starting a test run. This will start the system under test with some extra code: the Fit or Slim server. The output of the test run is stored to serve the page and test history pages.Next to the main components, there are a few extra features:
+The wiki server is the component responsible for serving the web pages and handling user requests. One of the operations is starting a test run. This will start the system under test with some extra code: the Fit or Slim server. The output of the test run is stored to serve the page and test history pages. Next to the main components, there are a few extra features:
 
  * JUnit support
  * [[System configuration][#systemconfiguration]]
+ * [[Vert.x runtime and adapters][#vertxruntime]]
 
 !anchor wikiserver
 !2 Wiki server
-The wiki server is the first thing a user sees when  starting FitNesse. The most notable class is the Responder. Responders can be configured via the [[configuration file][<UserGuide.AdministeringFitNesse.ConfigurationFile]]. Per request a responder is created. The type of responder depends on the URL sent to FitNesse. By default the !-WikiPageResponder-! is loaded.
+The wiki server is the first thing a user sees when starting FitNesse. The most notable class is the Responder. Responders can be configured via the [[configuration file][<UserGuide.AdministeringFitNesse.ConfigurationFile]]. Per request a responder is created. The type of responder depends on the URL sent to FitNesse. By default the !-WikiPageResponder-! is loaded.
 
 The configuration of a running FitNesse server is maintained in the wiki module, in a !-FitNesseContext-! instance. This context is configured at system startup and does not change during the lifetime of the application.
 
@@ -84,3 +85,20 @@ FitNesse uses are generic way to construct objects from (configured) classes: aÂ
  * Component()
 
 The properties contain all configuration properties, read from file and command line.
+
+!anchor vertxruntime
+!2 Vert.x runtime and adapters
+The Vert.x runtime provides an async HTTP server with EventBus-backed responders. It keeps the legacy responder model but moves request handling off the event loop using workers. This allows new HTTP endpoints, streaming adapters, and plugins without changing the core wiki/rendering logic.
+
+Key elements:
+ * !-fitnesse.vertx.FitNesseVertxMain-!: Bootstraps Vert.x, loads config, initializes !-FitNesseContext-!, and wires routes.
+ * !-VertxConfig / VertxConfigLoader-!: Loads !-vertx-config.json-!, env overrides, and writes defaults on first run.
+ * !-ResponderBusService-!: Adapts legacy responders to async EventBus requests (e.g. page view, edit, save, files).
+ * !-VertxPolicyHandler-!: Enforces !-policy.json-! rules with Basic or OIDC auth.
+ * Static assets and files served under !style_code(/files/*) with the wiki root still at !style_code(/wiki/*).
+
+Optional adapters:
+ * MCP (HTTP/WebSocket/gRPC) for external tool integration.
+ * AI endpoints for assist/test generation with provider selection.
+
+This runtime keeps the wiki page model and test execution engine intact, while allowing modern routing, auth, and observability (Prometheus metrics).

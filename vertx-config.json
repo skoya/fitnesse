@@ -1,0 +1,17 @@
+{
+  "port" : 8080,
+  "rootPath" : "/Users/bobby/Dev/fitnesse",
+  "rootDirectory" : "FitNesseRoot",
+  "authEnabled" : false,
+  "mcpWebSocketEnabled" : false,
+  "mcpGrpcEnabled" : false,
+  "mcpGrpcPort" : 50051,
+  "requestTimeoutMillis" : 30000,
+  "idleTimeoutSeconds" : 60,
+  "testPoolSize" : 10,
+  "testMaxQueue" : 40,
+  "oidcEnabled" : false,
+  "oidcIssuer" : null,
+  "oidcClientId" : null,
+  "oidcAudience" : null
+}

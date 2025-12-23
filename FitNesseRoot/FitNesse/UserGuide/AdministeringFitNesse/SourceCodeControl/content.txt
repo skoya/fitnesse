@@ -16,6 +16,39 @@ Configuration:
  * Choose merge strategy and author mapping (e.g., map authenticated users to git author/email).
  * Repo must be initialized; the server can commit on save once the working tree exists.
 
+!2 Safe defaults
+ * Use a dedicated repo per wiki and a service committer name/email (set !-FITNESSE_GIT_COMMITTER_NAME-! and !-FITNESSE_GIT_COMMITTER_EMAIL-!) so audit trails stay consistent.
+ * Keep !-FITNESSE_GIT_MERGE_STRATEGY=FAST_FORWARD-! unless you explicitly need merge commits or rebases.
+ * Enable auth so author mapping is populated; otherwise commits fall back to the service user.
+
+!2 Migration steps (filesystem to git-native)
+ * Stop the server to avoid writes during migration.
+ * Copy the wiki into a new repo and create the initial commit:
+   * !style_code(./gradlew copyRuntimeLibs)
+   * !style_code(java -cp build/classes/java/main:build/resources/main:lib/* fitnesseMain.GitMigrateMain --from FitNesseRoot --to /path/to/wiki-repo --initRepo true)
+ * Point your server at the new repo root and restart.
+
+!2 Conflict handling (what users see)
+When two edits overlap, the server detects the conflict and blocks the save until it is resolved, instead of committing inline conflict markers.
+
+!plantuml
+@startuml
+actor User
+participant "FitNesse UI" as UI
+participant "GitDocStore" as Store
+User -> UI: Save page
+UI -> Store: writePage(expectedVersion)
+Store -> Store: attempt merge strategy
+alt no conflict
+  Store --> UI: commit + new version
+  UI --> User: Save succeeded
+else conflict
+  Store --> UI: conflict payload
+  UI --> User: resolve + retry
+end
+@enduml
+!endplantuml
+
 !2 Legacy version controllers (still available)
 It is relatively simple to marry !-FitNesse-! to your source code control system. By default FitNesse is using a Zip-file based version control mechanism. As soon as a page is updated, a backup is made of the current version and the new version is put into place. Closely tied to the version controller is the .RecentChanges page. This page can be consulted to see who change what.
 

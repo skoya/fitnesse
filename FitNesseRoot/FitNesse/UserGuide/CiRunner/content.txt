@@ -1,0 +1,54 @@
+!1 CI runner (headless)
+The headless runner executes suites in CI and writes JUnit XML, HTML, and JSON summaries. It exits non-zero when failures or exceptions occur.
+
+!2 Minimal command (local or CI)
+{{{
+./gradlew copyRuntimeLibs
+java -cp build/classes/java/main:build/resources/main:lib/* \
+  fitnesseMain.FitNesseTestMain \
+  --root FitNesseRoot \
+  --suite "${FITNESSE_SUITE}" \
+  --format junit,html,json \
+  --out build/test-results/fitnesse-cli
+}}}
+
+!2 GitHub Actions (minimal)
+{{{
+- name: FitNesse CLI
+  env:
+    FITNESSE_SUITE: FitNesse.SuiteAcceptanceTests
+  run: |
+    ./gradlew copyRuntimeLibs
+    java -cp build/classes/java/main:build/resources/main:lib/* \
+      fitnesseMain.FitNesseTestMain \
+      --root FitNesseRoot \
+      --suite "${FITNESSE_SUITE}" \
+      --format junit,html,json \
+      --out build/test-results/fitnesse-cli
+}}}
+
+!2 GitLab CI (minimal)
+{{{
+fitnesse-cli:
+  stage: test
+  image: eclipse-temurin:21-jdk
+  script:
+    - ./gradlew copyRuntimeLibs
+    - java -cp build/classes/java/main:build/resources/main:lib/* \
+        fitnesseMain.FitNesseTestMain \
+        --root FitNesseRoot \
+        --suite "$FITNESSE_SUITE" \
+        --format junit,html,json \
+        --out build/test-results/fitnesse-cli
+  artifacts:
+    when: always
+    reports:
+      junit: build/test-results/fitnesse-cli/**/*.xml
+    paths:
+      - build/test-results/fitnesse-cli
+}}}
+
+!2 Expected artifacts
+ * !style_code(build/test-results/fitnesse-cli/junit/*.xml) (JUnit XML)
+ * !style_code(build/test-results/fitnesse-cli/html/) (HTML reports)
+ * !style_code(build/test-results/fitnesse-cli/summary.json) (run summary)

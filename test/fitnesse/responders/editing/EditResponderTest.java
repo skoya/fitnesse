@@ -17,6 +17,8 @@ import fitnesse.wiki.*;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Properties;
+
 public class EditResponderTest {
   private WikiPage root;
   private MockRequest request;
@@ -131,6 +133,19 @@ public class EditResponderTest {
     SimpleResponse response = (SimpleResponse) responder.makeResponse(context, request);
     String body = response.getContent();
     assertMatches("TemplateInserter.js", body);
+  }
+
+  @Test
+  public void testTemplateLibraryLinkUsesWikiRoot() throws Exception {
+    Properties properties = new Properties();
+    properties.setProperty("wiki.root", "/wiki/");
+    FitNesseContext themedContext = FitNesseUtil.makeTestContext(properties);
+    EditResponder themedResponder = new EditResponder();
+    MockRequest themedRequest = new MockRequest();
+    themedRequest.setResource("ChildPage");
+
+    SimpleResponse response = (SimpleResponse) themedResponder.makeResponse(themedContext, themedRequest);
+    assertSubString("href=\"/wiki/TemplateLibrary\"", response.getContent());
   }
 
   @Test
