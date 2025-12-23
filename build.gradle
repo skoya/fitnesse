@@ -34,7 +34,7 @@ plugins {
 group = 'org.fitnesse'
 version = new Date().format('yyyyMMdd')
 ext {
-  vertxVersion = '4.5.13'
+  vertxVersion = '4.5.23'
   grpcVersion = '1.69.0'
   protobufVersion = '3.25.5'
 }
@@ -427,6 +427,11 @@ publishing {
 }
 
 signing {
+  def signingKey = findProperty("signingKey")
+  def signingPassword = findProperty("signingPassword")
+  if (signingKey != null && !signingKey.toString().isEmpty()) {
+    useInMemoryPgpKeys(signingKey.toString(), signingPassword?.toString())
+  }
   sign publishing.publications
 }
 

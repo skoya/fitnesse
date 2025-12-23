@@ -1,0 +1,49 @@
+!1 Maven Central publishing
+This page covers the GitHub Actions workflow that publishes FitNesse artifacts to Maven Central.
+
+!2 Release flow
+!mermaid
+flowchart LR
+  A[Tag release vYYYYMMDD] --> B[GitHub Actions publish-maven-central]
+  B --> C[Gradle publishToSonatype]
+  C --> D[Sonatype staging]
+  D --> E[Maven Central sync]
+!endmermaid
+
+!2 Required GitHub secrets
+|Name|Purpose|Notes|
+|SONATYPE_USERNAME|Sonatype Central/OSSRH username|Use a token or user name issued by Sonatype.|
+|SONATYPE_PASSWORD|Sonatype Central/OSSRH password|Pair with the username/token above.|
+|MAVEN_GPG_PRIVATE_KEY|PGP private key for signing|ASCII-armored key block (not base64).|
+|MAVEN_GPG_PASSPHRASE|PGP passphrase|Leave empty only if your key is unencrypted.|
+
+!note Security guidance: store these values in GitHub Actions secrets, and (if possible) protect the publish workflow with a GitHub environment that requires approvals.
+
+!2 Tagging and triggering
+The workflow triggers on tags that match !style_code(v*), or can be run manually with !style_code(workflow_dispatch).
+
+FitNesse uses a date-based version (from the build), so use a tag like !style_code(v20251223) to keep tags aligned with the published version.
+
+!2 Signing and publish sequence
+!plantuml
+@startuml
+actor ReleaseManager
+participant "GitHub Actions" as GHA
+participant "Gradle + signing" as Gradle
+participant "Sonatype Central" as Sonatype
+ReleaseManager -> GHA : Push tag vYYYYMMDD
+GHA -> Gradle : publishToSonatype + closeAndRelease
+Gradle -> Sonatype : Upload signed artifacts
+Sonatype --> GHA : Release complete
+@enduml
+
+!2 Local publish example
+If you need to publish from a local machine, provide the credentials and signing keys as Gradle properties:
+
+{{{
+./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository \
+  -PsonatypeUsername=... \
+  -PsonatypePassword=... \
+  -PsigningKey="-----BEGIN PGP PRIVATE KEY BLOCK-----..." \
+  -PsigningPassword=...
+}}}
