@@ -34,7 +34,7 @@ plugins {
 group = 'org.fitnesse'
 version = new Date().format('yyyyMMdd')
 ext {
-  vertxVersion = '4.5.23'
+  vertxVersion = '5.0.6'
   grpcVersion = '1.69.0'
   protobufVersion = '3.25.5'
 }
