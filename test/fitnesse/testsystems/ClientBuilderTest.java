@@ -155,6 +155,19 @@ public class ClientBuilderTest {
   }
 
   @Test
+  public void buildCommandUsesCurrentJvmForPlainJava() {
+    String specifiedPageText = "!define COMMAND_PATTERN {java -cp %p %m}\n";
+    WikiPage specifiedPage = makeTestPage(specifiedPageText);
+    Descriptor descriptor = new WikiPageDescriptor(specifiedPage, false, false, "");
+    MockClientBuilder clientBuilder = new MockClientBuilder(descriptor);
+
+    ClassPath classPath = new ClassPath("path", System.getProperty("path.separator"));
+    String[] command = clientBuilder.buildCommand(clientBuilder.getCommandPattern(), "example.Main", classPath);
+
+    assertEquals(ClientBuilder.javaExecutable(), command[0]);
+  }
+
+  @Test
   public void testCommandPatternJavaWithDefinedCommandsWithDebug() {
     String specifiedPageText = "!define COMMAND_PATTERN {java -specialParam -cp %p %m}\n"
             + "!define REMOTE_DEBUG_COMMAND {java -remoteDebug -cp %p %m}";

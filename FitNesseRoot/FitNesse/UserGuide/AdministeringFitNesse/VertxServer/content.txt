@@ -2,9 +2,18 @@
 The Vert.x runtime replaces the legacy servlet stack with async routing, EventBus wiring, and optional MCP adapters (HTTP, WebSocket, gRPC).
 
 !2 Starting the server
- * Use !style_code(./quickrun.sh) for a local dev start (reads env defaults).
- * Or run !style_code(fitnesse.vertx.FitNesseVertxMain) directly: !style_code(java -cp build/classes/java/main:build/resources/main:lib/* fitnesse.vertx.FitNesseVertxMain)
+ * Use !style_code(./quickrun.sh) (macOS/Linux) or !style_code(./quickrun.cmd) (Windows) for a local dev start (reads env defaults).
+ * Or run !style_code(fitnesse.vertx.FitNesseVertxMain) directly: !style_code(java -cp build/classes/java/main:build/resources/main:lib/* fitnesse.vertx.FitNesseVertxMain) (use !style_code(;) instead of !style_code(:) on Windows classpaths).
  * The server redirects !style_code(/) to !style_code(/wiki/FrontPage) and serves static assets under !style_code(/files/*).
+Windows quickrun uses !style_code(JAVA_HOME) when set and falls back to !style_code(java) on your !style_code(PATH).
+
+!3 Quickrun flow
+!mermaid
+flowchart LR
+  A[quickrun.sh / quickrun.cmd] --> B[gradlew classes + copyRuntimeLibs]
+  B --> C[FitNesseVertxMain]
+  C --> D[HTTP port + Slim port]
+!endmermaid
 
 !2 Key environment settings
 |!meta name|!meta default|!meta description|
@@ -24,7 +33,7 @@ The Vert.x runtime replaces the legacy servlet stack with async routing, EventBu
 |FITNESSE_TEST_MAX_QUEUE|auto (pool*4)|Max queued test runs before 429 backpressure; defaults to 4x pool size|
 |prevent.system.exit|false|Recommended on modern JDKs to avoid SecurityManager interference with Slim SUT|
 |java.security.manager|allow|Set to allow to prevent SecurityManager install errors on modern JDKs|
-|SLIM_PORT|8099|Port hint for Slim runner when using quickrun.sh (can be overridden)|
+|SLIM_PORT|8099|Port hint for Slim runner when using quickrun.sh/quickrun.cmd (can be overridden)|
 
 !2 vertx-config.json
 If !style_code(vertx-config.json) is missing at startup, the server writes a default file with the current settings so you can edit it directly. Environment variables still override values from the file.

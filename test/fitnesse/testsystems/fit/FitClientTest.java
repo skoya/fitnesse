@@ -28,7 +28,7 @@ public class FitClientTest implements FitClientListener {
   public void setUp() throws Exception {
     CommandRunningFitClient.TIMEOUT = 10000;
     client = new CommandRunningFitClient(new CommandRunningFitClient.OutOfProcessCommandRunner(
-        new String[] { "java", "-cp", GradleSupport.CLASSES_DIR, "fit.FitServer", "-v" }, null, new ConsoleExecutionLogListener()));
+        new String[] { GradleSupport.javaCommand(), "-cp", GradleSupport.CLASSES_DIR, "fit.FitServer", "-v" }, null, new ConsoleExecutionLogListener()));
     client.addFitClientListener(this);
   }
 
@@ -73,7 +73,7 @@ public class FitClientTest implements FitClientListener {
 
   @Test
   public void testStandardError() throws Exception {
-    client = new CommandRunningFitClient(new CommandRunningFitClient.OutOfProcessCommandRunner(new String[] { "java", "-Duser.country=US", "-Duser.language=en", "e.g.testStandardError" }, null,
+    client = new CommandRunningFitClient(new CommandRunningFitClient.OutOfProcessCommandRunner(new String[] { GradleSupport.javaCommand(), "-Duser.country=US", "-Duser.language=en", "e.g.testStandardError" }, null,
             new ConsoleExecutionLogListener()));
     client.addFitClientListener(this);
     client.start();
@@ -86,7 +86,7 @@ public class FitClientTest implements FitClientListener {
   public void testDoesntWaitForTimeoutOnBadCommand() throws Exception {
     CommandRunningFitClient.TIMEOUT = 5000;
     TimeMeasurement measurement = new TimeMeasurement().start();
-    client = new CommandRunningFitClient(new CommandRunningFitClient.OutOfProcessCommandRunner(new String[] { "java", "e.g.testDoesntWaitForTimeoutOnBadCommand" }, null,
+    client = new CommandRunningFitClient(new CommandRunningFitClient.OutOfProcessCommandRunner(new String[] { GradleSupport.javaCommand(), "e.g.testDoesntWaitForTimeoutOnBadCommand" }, null,
             new ConsoleExecutionLogListener()));
     client.addFitClientListener(this);
     client.start();

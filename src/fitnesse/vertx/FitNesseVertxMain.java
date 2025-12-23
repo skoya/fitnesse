@@ -506,6 +506,7 @@ public final class FitNesseVertxMain {
     }
 
     router.get("/files").handler(ctx -> handleFileRequest(ctx, bus, busService));
+    router.get("/files/").handler(ctx -> handleFileRequest(ctx, bus, busService));
     router.get("/files/*").handler(ctx -> handleFileRequest(ctx, bus, busService));
 
     WebClient webClient = WebClient.create(vertx);

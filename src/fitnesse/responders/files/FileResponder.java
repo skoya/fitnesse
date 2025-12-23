@@ -33,20 +33,18 @@ public class FileResponder implements SecureResponder {
 
   private static final int RESOURCE_SIZE_LIMIT = 262144 * 2;
   private static final FileNameMap fileNameMap = URLConnection.getFileNameMap();
-  String resource;
-  File requestedFile;
-  Date lastModifiedDate;
 
   @Override
   public Response makeResponse(FitNesseContext context, Request request) throws Exception {
     String rootPath = context.getRootPagePath();
+    String resource;
     try {
       resource = URLDecoder.decode(request.getResource(), FileUtil.CHARENCODING);
     } catch (UnsupportedEncodingException e) {
       return new ErrorResponder(e).makeResponse(context, request);
     }
 
-    requestedFile = new File(rootPath, resource);
+    File requestedFile = new File(rootPath, resource);
 
     if (!isInFilesDirectory(new File(rootPath), requestedFile)) {
       return new ErrorResponder("Invalid path: " + resource).makeResponse(context, request);
@@ -54,26 +52,24 @@ public class FileResponder implements SecureResponder {
       return new DirectoryResponder(resource, requestedFile).makeResponse(context, request);
     }
     if (requestedFile.exists()) {
-      return makeFileResponse(request);
-    } else if (canLoadFromClasspath()) {
-      return makeClasspathResponse(context, request);
+      return makeFileResponse(request, requestedFile);
+    } else if (canLoadFromClasspath(resource)) {
+      return makeClasspathResponse(context, request, resource);
     } else {
       return new NotFoundResponder().makeResponse(context, request);
     }
   }
 
 
-  private boolean canLoadFromClasspath() {
+  private boolean canLoadFromClasspath(String resource) {
     return resource.startsWith("files/fitnesse/");
   }
 
-  private Response makeClasspathResponse(FitNesseContext context, Request request) throws Exception {
-
-    determineLastModifiedInfo(LAST_MODIFIED_FOR_RESOURCES);
-
-    if (isNotModified(request))
-      return createNotModifiedResponse();
-
+  private Response makeClasspathResponse(FitNesseContext context, Request request, String resource) throws Exception {
+    Date lastModifiedDate = trimMillis(LAST_MODIFIED_FOR_RESOURCES);
+    if (isNotModified(request, lastModifiedDate)) {
+      return createNotModifiedResponse(lastModifiedDate);
+    }
     String classpathResource = "/fitnesse/resources/" + resource.substring("files/fitnesse/".length());
     InputStream input;
 
@@ -95,27 +91,25 @@ public class FileResponder implements SecureResponder {
     SimpleResponse response = new SimpleResponse();
     response.setContent(content);
     setContentType(classpathResource, response);
-    lastModifiedDate = LAST_MODIFIED_FOR_RESOURCES;
     response.setLastModifiedHeader(lastModifiedDate);
 
     return response;
   }
 
-  private Response makeFileResponse(Request request) throws FileNotFoundException {
+  private Response makeFileResponse(Request request, File requestedFile) throws FileNotFoundException {
     InputStreamResponse response = new InputStreamResponse();
-    determineLastModifiedInfo(new Date(requestedFile.lastModified()));
+    Date lastModifiedDate = trimMillis(new Date(requestedFile.lastModified()));
 
-    if (isNotModified(request))
-      return createNotModifiedResponse();
-    else {
-      response.setBody(requestedFile);
-      setContentType(requestedFile.getName(), response);
-      response.setLastModifiedHeader(lastModifiedDate);
+    if (isNotModified(request, lastModifiedDate)) {
+      return createNotModifiedResponse(lastModifiedDate);
     }
+    response.setBody(requestedFile);
+    setContentType(requestedFile.getName(), response);
+    response.setLastModifiedHeader(lastModifiedDate);
     return response;
   }
 
-  private boolean isNotModified(Request request) {
+  private boolean isNotModified(Request request, Date lastModifiedDate) {
     if (request.hasHeader("If-Modified-Since")) {
       String queryDateString = request.getHeader("If-Modified-Since");
       try {
@@ -130,15 +124,15 @@ public class FileResponder implements SecureResponder {
     return false;
   }
 
-  private Response createNotModifiedResponse() {
+  private Response createNotModifiedResponse(Date lastModifiedDate) {
     Response response = new SimpleResponse();
     response.notModified(lastModifiedDate, Clock.currentDate());
     return response;
   }
 
-  private void determineLastModifiedInfo(Date lastModified) {
+  private Date trimMillis(Date lastModified) {
     // remove milliseconds
-    lastModifiedDate = new Date((lastModified.getTime() / 1000) * 1000);
+    return new Date((lastModified.getTime() / 1000) * 1000);
   }
 
   private void setContentType(String filename, Response response) {

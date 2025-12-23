@@ -72,17 +72,22 @@ public class FileResponderTest {
 
   @Test
   public void testSpacesInFileName() throws Exception {
+    SampleFileUtility.addFile(context.getRootPagePath(), "/files/test File With Spaces In Name", "spaces content");
     request.setResource("files/test%20File%20With%20Spaces%20In%20Name");
-    responder = new FileResponder();
-    responder.makeResponse(context, request);
-    assertEquals(context.getRootPagePath() + File.separator + "files" + File.separator + "test File With Spaces In Name", responder.requestedFile.getPath());
+    response = responder.makeResponse(context, request);
+    MockResponseSender sender = new MockResponseSender();
+    sender.doSending(response);
+    assertSubString("spaces content", sender.sentData());
   }
 
   @Test
   public void testUrlEncodedSpacesInFileName() throws Exception {
+    SampleFileUtility.addFile(context.getRootPagePath(), "/files/file4 with spaces2.txt", "file4 spaces2 content");
     request.setResource("files/file4%20with%20spaces%32.txt");
-    responder.makeResponse(context, request);
-    assertEquals("files/file4 with spaces2.txt", responder.resource);
+    response = responder.makeResponse(context, request);
+    MockResponseSender sender = new MockResponseSender();
+    sender.doSending(response);
+    assertSubString("file4 spaces2 content", sender.sentData());
   }
 
   @Test

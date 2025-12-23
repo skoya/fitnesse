@@ -20,7 +20,7 @@ public class CommandRunnerTest {
 
   @Test
   public void testBasics() throws Exception {
-    CommandRunner runner = new CommandRunner(new String[] { "java", "-cp", GradleSupport.CLASSES_DIR, "fitnesse.testutil.Echo" }, null, executionLogListener);
+    CommandRunner runner = new CommandRunner(new String[] { GradleSupport.javaCommand(), "-cp", GradleSupport.CLASSES_DIR, "fitnesse.testutil.Echo" }, null, executionLogListener);
     runner.asynchronousStart();
     runner.join();
     assertHasRegexp(Echo.ECHO_THIS, executionLogListener.stdOut.toString());
@@ -31,7 +31,7 @@ public class CommandRunnerTest {
 
   @Test
   public void testClassNotFound() throws Exception {
-    CommandRunner runner = new CommandRunner(new String[] {  "java", "-Duser.country=US", "-Duser.language=en", "BadClass" }, null, executionLogListener);
+    CommandRunner runner = new CommandRunner(new String[] { GradleSupport.javaCommand(), "-Duser.country=US", "-Duser.language=en", "BadClass" }, null, executionLogListener);
     runner.asynchronousStart();
     runner.join();
     assertHasRegexp("Error", executionLogListener.stdErr.toString());

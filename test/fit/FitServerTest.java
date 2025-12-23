@@ -17,6 +17,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 
 import fitnesse.socketservice.PlainServerSocketFactory;
 
@@ -28,7 +29,7 @@ import util.GradleSupport;
 import util.StreamReader;
 
 public class FitServerTest {
-  private static final int PORT_NUMBER = 1634;
+  private int portNumber;
   private Process process;
   private Socket socket;
   private ServerSocket serverSocket;
@@ -40,8 +41,7 @@ public class FitServerTest {
 
   @Before
   public void setup() throws IOException {
-    String sentinelName = FitServer.sentinelName(PORT_NUMBER);
-    FileUtil.deleteFile(sentinelName);
+    portNumber = 0;
   }
 
   @After
@@ -188,8 +188,11 @@ public class FitServerTest {
   }
 
   private void prepareSessionProcess() throws Exception {
+    serverSocket = new PlainServerSocketFactory().createServerSocket(0);
+    serverSocket.setSoTimeout(10000);
+    portNumber = serverSocket.getLocalPort();
     checkSentinelToMakeSureThatFitServerIsNotRunning();
-    String commandWithArguments = command() + " -s -v localhost " + PORT_NUMBER
+    String commandWithArguments = command() + " -s -v localhost " + portNumber
         + " 23";
     process = Runtime.getRuntime().exec(commandWithArguments);
 
@@ -203,17 +206,15 @@ public class FitServerTest {
 
   private void checkSentinelToMakeSureThatFitServerIsNotRunning()
       throws Exception {
-    String sentinelName = FitServer.sentinelName(PORT_NUMBER);
+    String sentinelName = FitServer.sentinelName(portNumber);
     File sentinel = new File(sentinelName);
-    assertFalse(sentinel.exists());
+    if (sentinel.exists()) {
+      FileUtil.deleteFile(sentinelName);
+    }
   }
 
   private void establishConnection() throws Exception {
-    serverSocket = new PlainServerSocketFactory().createServerSocket(PORT_NUMBER);
-    socket = null;
-
-    listenForConnectionSocket();
-    waitForConnectionSocket();
+    socket = acceptClient();
 
     assertNotNull(socket);
     assertNotNull(socketInput);
@@ -225,29 +226,16 @@ public class FitServerTest {
     socketOutput.write(connectionStatusSize.getBytes());
   }
 
-  private void waitForConnectionSocket() throws InterruptedException {
-    synchronized (serverSocket) {
-      if (socket == null)
-        serverSocket.wait();
+  private Socket acceptClient() throws Exception {
+    try {
+      Socket client = serverSocket.accept();
+      socketInput = client.getInputStream();
+      socketOutput = client.getOutputStream();
+      return client;
+    } catch (SocketTimeoutException e) {
+      String output = stdoutBytes == null ? "" : stdoutBytes.toString();
+      throw new AssertionError("Timed out waiting for FitServer to connect. Output: " + output, e);
     }
-  }
-
-  private void listenForConnectionSocket() {
-    new Thread() {
-      @Override
-      public void run() {
-        try {
-          synchronized (serverSocket) {
-            socket = serverSocket.accept();
-            socketInput = socket.getInputStream();
-            socketOutput = socket.getOutputStream();
-            serverSocket.notify();
-          }
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
-      }
-    }.start();
   }
 
   private void terminateSessionProcess() throws IOException,
@@ -328,7 +316,7 @@ public class FitServerTest {
   }
 
   protected String command() {
-    return "java -cp " + GradleSupport.CLASSES_DIR + " fit.FitServer";
+    return GradleSupport.javaCommand() + " -cp " + GradleSupport.CLASSES_DIR + " fit.FitServer";
   }
 
   protected String simpleTable(String fixtureName) {

@@ -15,6 +15,18 @@ The special variables are:
 
 '''COMMAND_PATTERN''' is the basis for every execution performed in FitNesse.  It specifies the command that will be executed.
 ''default: '' '''java -cp %p %m'''
+''UX update:'' the default Java command now uses the same JVM running FitNesse (via !style_code(java.home)). This avoids class version mismatches in child test processes. To pin a specific runtime, override !style_code(COMMAND_PATTERN).
+''Note:'' if !style_code(COMMAND_PATTERN) (or !style_code(REMOTE_DEBUG_COMMAND)) starts with !style_code(java) or !style_code(java.exe), FitNesse resolves it to the current JVM's java executable so custom patterns stay aligned with the server runtime.
+
+!mermaid
+flowchart TD
+  A[COMMAND_PATTERN] --> B{first token is java?}
+  B -- yes --> C[replace with java from java.home]
+  B -- no --> D[keep command as-is]
+  C --> E[substitute %p and %m]
+  D --> E
+  E --> F[execute test runner]
+!endmermaid
 There are two special symbols used that will get replaced before execution.
  * '''%p''' will be replaces with the calculated path/classpath.  This is the accumulation of all the ''!path'' elements on all the ''ClassPath'' pages in the scope of the current page.
  * '''%m''' stands for '''main''' or '''main class'''.  For Java it is the name of the class that will be executed.
@@ -27,7 +39,7 @@ If you're running tests in Java you probably don't want to change this.
 ''default: '' '''system dependant.... either ; or :'''
 
 '''REMOTE_DEBUG_COMMAND''' is the command pattern used to execute tests in debug mode.  See DebugingFixtureCode for more details.
-''default:'' Same as command pattern, except if contains "java" then '''"java -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=8000 -cp %p %m"''' is used instead
+''default:'' Same as command pattern, except if it is Java then '''"java -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=8000 -cp %p %m"''' is used instead (with !style_code(java) resolved as described above).
 It has the same format as the standand '''COMMAND_PATTERN'''
 
 '''REMOTE_DEBUG_RUNNER''' is the test runner used to execute tests in debug mode.  See DebugingFixtureCode for more details.

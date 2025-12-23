@@ -39,6 +39,7 @@ class VertxLegacyRoutingTest {
 
     Router router = Router.router(vertx);
     router.get("/files").handler(rc -> handleFiles(rc, bus, busService));
+    router.get("/files/").handler(rc -> handleFiles(rc, bus, busService));
     router.get("/files/*").handler(rc -> handleFiles(rc, bus, busService));
     router.get("/:legacyPage").handler(rc -> {
       String legacyPage = rc.pathParam("legacyPage");
@@ -62,8 +63,9 @@ class VertxLegacyRoutingTest {
           ctx.verify(() -> {
             assertTrue(ar.succeeded());
             var response = ar.result();
+            String body = response.bodyAsString();
             assertEquals(200, response.statusCode());
-            assertTrue(response.bodyAsString().contains("sample.txt"));
+            assertTrue(body.contains("sample.txt"), () -> "Directory listing body was: " + body);
           });
           completeIfDone(ctx, remaining, server, context);
         });

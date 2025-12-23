@@ -5,6 +5,15 @@ The 'files' section is a directory where FitNesse keeps all of its non-wiki file
 Simply add "/files/" on the end of the URL used to visit the FitNesse installation.  To get to the 'files' section of fitnesse.org the following url is used.
 http://www.fitnesse.org/files/
 
+''UX update'': the FilesSection now accepts both !style_code(/files) and !style_code(/files/) so bookmarks without a trailing slash still land on the directory listing. Use whichever is easiest to type; both end at the same place.
+
+!mermaid
+flowchart LR
+  A[/files] --> B[redirects to /files/]
+  B --> C[directory listing]
+  D[/files/{path}] --> E[file or subdirectory view]
+!endmermaid
+
 Notice that this looks like a directory listing.  That is because the root of the FilesSection is a directory.  By clicking on a directory or file you will be redirected to that selection.  If it is a directory you will see a listing of its contents and if it is a file you will see the contents of the file.
 
 In general FitNesse will serve files from the FilesSection like any other web server would.

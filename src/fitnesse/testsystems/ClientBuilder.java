@@ -39,6 +39,10 @@ public abstract class ClientBuilder<T> {
   }
 
   protected String[] buildCommand(String[] commandPattern, String testRunner, ClassPath classPath) {
+    if (isPlainJavaCommand(commandPattern[0])) {
+      commandPattern = commandPattern.clone();
+      commandPattern[0] = javaExecutable();
+    }
 
     ClassPath completeClassPath;
     if (isJava(commandPattern[0])) {
@@ -60,6 +64,14 @@ public abstract class ClientBuilder<T> {
 
   private boolean isJava(String command) {
     return command.toLowerCase().contains("java");
+  }
+
+  private boolean isPlainJavaCommand(String command) {
+    if (command == null) {
+      return false;
+    }
+    String lower = command.toLowerCase();
+    return "java".equals(lower) || "java.exe".equals(lower);
   }
 
   protected static String replace(String value, String mark, String replacement) {
@@ -164,9 +176,12 @@ public abstract class ClientBuilder<T> {
   }
 
   protected static String javaExecutable() {
-    String javaHome = System.getenv("JAVA_HOME");
+    String javaHome = System.getProperty("java.home");
+    if (javaHome == null || javaHome.isEmpty()) {
+      javaHome = System.getenv("JAVA_HOME");
+    }
     String result;
-    if (javaHome != null) {
+    if (javaHome != null && !javaHome.isEmpty()) {
       result = javaHome + File.separator + "bin" + File.separator + "java";
     } else {
       result = "java";
