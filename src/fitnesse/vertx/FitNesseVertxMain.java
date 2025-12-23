@@ -40,7 +40,7 @@ import io.vertx.ext.web.client.WebClient;
 import io.vertx.micrometer.backends.BackendRegistries;
 import io.vertx.micrometer.MicrometerMetricsOptions;
 import io.vertx.micrometer.VertxPrometheusOptions;
-import io.micrometer.prometheus.PrometheusMeterRegistry;
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
 
 import java.io.File;
 import java.io.IOException;
