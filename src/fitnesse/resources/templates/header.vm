@@ -8,6 +8,7 @@
 <div class="theme-switcher">
  <label for="theme-select">Theme</label>
  <select id="theme-select">
+  <option value="fitnesse_modern">Modern</option>
   <option value="fitnesse_classic">Classic</option>
   <option value="fitnesse_mint">Mint</option>
   <option value="fitnesse_straight">Straight</option>

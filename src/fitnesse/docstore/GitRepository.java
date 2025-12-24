@@ -31,6 +31,11 @@ public final class GitRepository {
   }
 
   public void commit(String message, GitIdentity author, GitCommitConfig commitConfig) {
+    if (author == null || author.isEmpty()) {
+      if (commitConfig != null) {
+        author = new GitIdentity(commitConfig.committerName(), commitConfig.committerEmail());
+      }
+    }
     List<String> args = List.of("commit", "-m", message, "--allow-empty");
     runWithEnv(args, author, commitConfig);
   }

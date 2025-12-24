@@ -14,11 +14,14 @@ So here you are, in your new !-FitNesse-!, with a look and feel you're not accus
 !2 Theming to the rescue
 One of the benefits you'll have from the new layout is that the page L&F is easier to change. !-FitNesse-! comes with a few styles built-in:
 
- * ''fitnesse_straight'' - the default style
- * ''fitnesse_mint'' - a classy style
+ * ''fitnesse_modern'' - the default style (responsive, card-based layout)
+ * ''fitnesse_straight'' - a compact style
+ * ''fitnesse_mint'' - a classic style
  * ''fitnesse_topnav'' - a minimalistic style
- * ''fitnesse_classic'' - classic FitNesse styling
+ * ''fitnesse_classic'' - legacy FitNesse styling
  * ''bootstrap'' - uses [[Twitter Bootstrap][http://twitter.github.com/bootstrap]] as a basis for its styling
+
+''UX update'': !-FitNesse-! now defaults to ''fitnesse_modern'' to improve readability and responsiveness on smaller screens. If you prefer a previous look, switch themes from the header drop-down or set the Theme property in !-plugins.properties-!.
 
 For all styles the HTML remains the same. The default style can be configured through ''plugins.properties'', !-FitNesse-!'s settings file (this is where you also configure custom symbols). Add the line
 
@@ -31,6 +34,27 @@ Theme=fitnesse_mint
 FitNesse.ai includes a theme switcher in the page header. Select a theme from the drop-down to apply it immediately. Your selection is stored in a browser cookie named !-fitnesse_theme-! and overrides the server default for that browser.
 
 Apart from the layout style, fitnesse loads a few stylesheets by default: ''fitnesse_pages.css'' and ''fitnesse_wiki.css''. Both files serve the boilerplate for pages (like the properties page) and the wiki text.
+
+!mermaid
+flowchart LR
+  A[Server default theme] --> B{fitnesse_theme cookie?}
+  B -- yes --> C[Use cookie theme]
+  B -- no --> D[Use server default]
+  C --> E[Load theme CSS + JS]
+  D --> E
+!endmermaid
+
+!plantuml
+@startuml
+actor User
+participant "FitNesse" as App
+participant "Theme assets" as Assets
+User -> App: Request page
+App -> App: Resolve theme (config + cookie)
+App -> Assets: Load /files/fitnesse/css/<theme>.css\nLoad /files/fitnesse/javascript/<theme>.js
+App --> User: Rendered page
+@enduml
+!endplantuml
 
 !2 Rolling your own
 FitNesse still has the ability to support custom user styling. In [[!-FitNesseRoot/files/fitnesse-!][/files/fitnesse]] you can place your own files. Stylesheets go in a ''css'' directory, Javascript in ''javascript'' and images are filed in the ''images'' folder (note: those directories are not present by default, you'll have to create them by hand).

@@ -45,13 +45,13 @@ public class ContextConfiguratorTest {
   }
 
   @Test
-  public void bootstrapIsDefaultTheme() throws IOException, PluginException {
+  public void modernIsDefaultTheme() throws IOException, PluginException {
     String theme = ContextConfigurator
       .empty()
       .makeFitNesseContext()
       .theme;
 
-    assertThat(theme, is("bootstrap"));
+    assertThat(theme, is("fitnesse_modern"));
   }
 
   @Test
