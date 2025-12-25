@@ -35,7 +35,7 @@ group = 'org.fitnesse'
 version = new Date().format('yyyyMMdd')
 ext {
   vertxVersion = '5.0.6'
-  grpcVersion = '1.69.0'
+  grpcVersion = '1.78.0'
   protobufVersion = '3.25.5'
 }
 
