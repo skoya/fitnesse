@@ -36,7 +36,7 @@ version = new Date().format('yyyyMMdd')
 ext {
   vertxVersion = '5.0.6'
   grpcVersion = '1.69.0'
-  protobufVersion = '3.25.5'
+  protobufVersion = '4.33.2'
 }
 
 println "Building FitNesse v${project.version}..."
